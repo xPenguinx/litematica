@@ -1,5 +1,7 @@
 package fi.dy.masa.litematica;
 
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.Text;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import net.fabricmc.api.ModInitializer;
@@ -22,5 +24,13 @@ public class Litematica implements ModInitializer
         {
             Litematica.logger.info(msg, args);
         }
+    }
+
+    public static void addChat(String msg)
+    {
+        MinecraftClient client = MinecraftClient.getInstance();
+        msg = msg.replace("&", "§");
+        Text message = Text.of("§8[§bLitematica§8] §f" + msg);
+        client.inGameHud.getChatHud().addMessage(message);
     }
 }

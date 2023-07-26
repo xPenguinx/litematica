@@ -7,11 +7,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
+
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
 import org.apache.commons.lang3.tuple.Pair;
 
 import net.minecraft.structure.StructurePlacementData;
@@ -1049,5 +1048,80 @@ public class SchematicPlacement
         }
 
         return color;
+    }
+
+    public StructurePlacementData fromString(String string)
+    {
+        StructurePlacementData ret = new StructurePlacementData();
+
+        if (Strings.isNullOrEmpty(string)) return ret;
+
+        JsonObject jsonObject = (JsonObject) JsonParser.parseString(string);
+
+        if (!jsonObject.has("m")) return ret;
+        if (!jsonObject.has("r")) return ret;
+        if (!jsonObject.has("x")) return ret;
+        if (!jsonObject.has("y")) return ret;
+        if (!jsonObject.has("z")) return ret;
+
+        String m = jsonObject.get("m").getAsString();
+        String r = jsonObject.get("r").getAsString();
+        int x = jsonObject.get("x").getAsInt();
+        int y = jsonObject.get("y").getAsInt();
+        int z = jsonObject.get("z").getAsInt();
+
+        BlockPos pos = new BlockPos(x, y, z);
+        BlockMirror blockMirror = BlockMirror.NONE;
+
+        for (BlockMirror mirror : BlockMirror.values())
+        {
+            if (mirror.asString().equalsIgnoreCase(m))
+            {
+                blockMirror = mirror;
+                break;
+            }
+        }
+
+        BlockRotation blockRotation = BlockRotation.NONE;
+
+        for (BlockRotation rotation : BlockRotation.values()) {
+            if (rotation.asString().equalsIgnoreCase(r)) {
+                blockRotation = rotation;
+                break;
+            }
+        }
+
+        ret.setMirror(blockMirror).setRotation(blockRotation).setPosition(pos);
+        return ret;
+    }
+
+    public String getAsString() {
+        return this.toString(this.getPlacementSettings(), this.getOrigin());
+    }
+
+    public String toString(StructurePlacementData data, BlockPos origin)
+    {
+        BlockMirror mirror = data.getMirror();
+        BlockRotation rotation = data.getRotation();
+
+        int x = origin.getX();
+        int y = origin.getY();
+        int z = origin.getZ();
+
+        JsonObject obj = new JsonObject();
+        obj.add("m", new JsonPrimitive(mirror.asString()));
+        obj.add("r", new JsonPrimitive(rotation.asString()));
+        obj.add("x", new JsonPrimitive(x));
+        obj.add("y", new JsonPrimitive(y));
+        obj.add("z", new JsonPrimitive(z));
+
+        return obj.toString();
+    }
+
+    public void setPlacementSettings(StructurePlacementData data)
+    {
+        this.setMirror(data.getMirror(), null);
+        this.setRotation(data.getRotation(), null);
+        this.setOrigin(data.getPosition(), null);
     }
 }

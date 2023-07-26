@@ -1,6 +1,9 @@
 package fi.dy.masa.litematica.gui;
 
 import javax.annotation.Nullable;
+
+import com.google.common.base.Strings;
+import fi.dy.masa.litematica.Litematica;
 import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.gui.GuiMainMenu.ButtonListenerChangeMenu;
 import fi.dy.masa.litematica.gui.widgets.WidgetListPlacementSubRegions;
@@ -25,6 +28,7 @@ import fi.dy.masa.malilib.util.GuiUtils;
 import fi.dy.masa.malilib.util.PositionUtils.CoordinateType;
 import fi.dy.masa.malilib.util.StringUtils;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.structure.StructurePlacementData;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
@@ -35,12 +39,13 @@ public class GuiPlacementConfiguration  extends GuiListBase<SubRegionPlacement, 
     public final SchematicPlacement placement;
     public ButtonGeneric buttonResetPlacement;
     public GuiTextFieldGeneric textFieldRename;
+    public GuiTextFieldGeneric textFieldSetPositioning;
 
     public GuiPlacementConfiguration(SchematicPlacement placement)
     {
         super(10, 62);
         this.placement = placement;
-        this.title = StringUtils.translate("litematica.gui.title.configure_schematic_placement");
+        this.title = StringUtils.translate("");
     }
 
     @Override
@@ -63,8 +68,16 @@ public class GuiPlacementConfiguration  extends GuiListBase<SubRegionPlacement, 
         int scaledWidth = GuiUtils.getScaledWindowWidth();
         int width = Math.min(300, scaledWidth - 200);
         int x = 12;
-        int y = 22;
+        int y = 1;
 
+        this.textFieldSetPositioning = new GuiTextFieldGeneric(x, y + 2, width, 16, this.textRenderer);
+        this.textFieldSetPositioning.setMaxLength(500);
+        this.textFieldSetPositioning.setText("");
+
+        this.addTextField(this.textFieldSetPositioning, null);
+        this.createButton(x + width + 4, y, -1, GuiPlacementConfiguration.ButtonListener.Type.SET);
+
+        y += 21;
         this.textFieldRename = new GuiTextFieldGeneric(x, y + 2, width, 16, this.textRenderer);
         this.textFieldRename.setMaxLength(256);
         this.textFieldRename.setText(this.placement.getName());
@@ -120,6 +133,9 @@ public class GuiPlacementConfiguration  extends GuiListBase<SubRegionPlacement, 
         y += 21;
 
         this.createButton(x, y, width, ButtonListener.Type.RESET_SUB_REGIONS);
+        y += 21;
+
+        this.createButton(x, y, width, GuiPlacementConfiguration.ButtonListener.Type.SHARE);
 
         ButtonListenerChangeMenu.ButtonType type;
 
@@ -257,6 +273,14 @@ public class GuiPlacementConfiguration  extends GuiListBase<SubRegionPlacement, 
                 this.addButton(button, listener);
                 return width;
             }
+
+            case SHARE:
+                label = "SHARE";
+                break;
+
+            case SET:
+                label = "Set Position";
+                break;
 
             default:
                 label = type.getDisplayName();
@@ -439,6 +463,27 @@ public class GuiPlacementConfiguration  extends GuiListBase<SubRegionPlacement, 
                     GuiBase.openGui(gui);
                     break;
                 }
+
+                case SHARE:
+                {
+                    mc.keyboard.setClipboard(this.placement.getAsString());
+                    Litematica.addChat("Copied schematic positioning to clipboard.");
+                    break;
+                }
+
+                case SET:
+                {
+                    String value = this.parent.textFieldSetPositioning.getText();
+                    if (!Strings.isNullOrEmpty(value))
+                    {
+                        StructurePlacementData data = this.placement.fromString(value);
+                        if (data != null)
+                        {
+                            this.placement.setPlacementSettings(data);
+                        }
+                    }
+                    break;
+                }
             }
 
             this.parent.initGui(); // Re-create buttons/text fields
@@ -461,6 +506,8 @@ public class GuiPlacementConfiguration  extends GuiListBase<SubRegionPlacement, 
             TOGGLE_ALL_REGIONS_ON   ("litematica.gui.button.schematic_placement.toggle_all_on"),
             TOGGLE_ALL_REGIONS_OFF  ("litematica.gui.button.schematic_placement.toggle_all_off"),
             RESET_SUB_REGIONS       (""),
+            SHARE                   (""),
+            SET                     (""),
             OPEN_VERIFIER_GUI       ("litematica.gui.button.schematic_verifier"),
             OPEN_MATERIAL_LIST_GUI  ("litematica.gui.button.material_list");
 
